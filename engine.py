@@ -72,7 +72,7 @@ def start(context, argv):
 
     #users should be created by the webapp, but for now, we'll just create the user here.
     #u = User.signup("dhelmet", "12345")
-    u = User.login('dhelmet', '12345')
+    u = User.login(os.environ.get('PARSE_USERNAME'), os.environ.get('PARSE_PASSWORD'))
     context.user = u
 
     # context.dump_file = None
