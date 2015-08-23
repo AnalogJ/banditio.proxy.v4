@@ -11,3 +11,9 @@ https://chromium.googlesource.com/chromium/blink/+/master/Source/devtools/front_
 https://chrome-devtools-frontend.appspot.com/
 https://chrome-devtools-frontend.appspot.com/serve_rev/@161986/devtools.html
 https://chrome-devtools-frontend.appspot.com/serve_rev/@169177/devtools.html
+
+
+https://stackoverflow.com/questions/28430479/using-google-chrome-remote-debugging-protocol
+
+https://github.com/mitmproxy/mitmproxy/blob/master/examples/har_extractor.py
+http://www.softwareishard.com/har/viewer/?inputUrl=http://www.janodvarko.cz/har/viewer/examples/inline-scripts-block.harp
