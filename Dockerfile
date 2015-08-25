@@ -6,9 +6,7 @@ RUN apt-get update && apt-get install -y supervisor
 
 #install the parsepy library
 RUN pip install git+https://github.com/dgrtwo/ParsePy.git
-RUN pip install pytz
-RUN pip install tornado
-
+RUN pip install pytz tornado websocket-client
 
 #clone the application code.
 #RUN git clone https://github.com/AnalogJ/banditio.proxy.v4.git "banditio.proxy"

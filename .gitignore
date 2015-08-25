@@ -4,3 +4,4 @@
 /mitmdump.log
 /supervisord.log
 /supervisord.pid
+/test.py
