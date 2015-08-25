@@ -232,98 +232,101 @@ def response(context, flow):
         #ws = create_connection("ws://localhost:9000/ws/{0}".format(entry.pageref))
         ws = create_connection("ws://localhost:9000/ws/all",sslopt={"check_hostname": False})
         print "sending notifications"
-        # ws.send(json.dumps({"msg": 'banditio.proxy connected'}))
-        # ws.send(json.dumps({
-        #     "method": "Network.requestWillBeSent",
-        #     "params": {
-        #         "requestId": entry.objectId,
-        #         "frameId": "7897.1",
-        #         "loaderId": "7897.3",
-        #         "documentURL": entry.request['url'],
-        #         "request": entry.request,
-        #         "timestamp": flow.request.timestamp_start, #88986.634829,
-        #         "wallTime": flow.request.timestamp_start, #1440472453.19435,
-        #         "initiator": {"type": "other"},
-        #         "type": "Document"
-        #     }
-        # }))
-        # ws.send(json.dumps({
-        #     "method": "Network.responseReceived",
-        #     "params": {
-        #         "requestId": entry.objectId,
-        #         "frameId": "7897.1",
-        #         "loaderId": "7897.3",
-        #         "timestamp": 88986.985021,
-        #         "type": "Document",
-        #         "response": {
-        #             "url": entry.response['url'],
-        #             "status": entry.response['status'],
-        #             "statusText": entry.response['statusText'],
-        #             "headers": entry.response['headers'],
-        #             "mimeType": entry.response['content']['mimeType'],
-        #             "connectionReused": False,
-        #             "fromDiskCache": False,
-        #             "fromServiceWorker": False,
-        #             "timing": {
-        #                 "requestTime": 88986.636403,
-        #                 "proxyStart": -1,
-        #                 "proxyEnd": -1,
-        #                 "dnsStart": 0,
-        #                 "dnsEnd": 108.372000002419,
-        #                 "connectStart": 108.372000002419,
-        #                 "connectEnd": 113.420000008773,
-        #                 "sslStart": -1,
-        #                 "sslEnd": -1,
-        #                 "serviceWorkerFetchStart": -1,
-        #                 "serviceWorkerFetchReady": -1,
-        #                 "serviceWorkerFetchEnd": -1,
-        #                 "sendStart": 113.492999997106,
-        #                 "sendEnd": 113.573000009637,
-        #                 "receiveHeadersEnd": 347.90900000371
-        #             },
-        #             "requestHeaders": {
-        #                 "If-None-Match": "\"1440455137124|#public|0|en|||0\"",
-        #                 "Accept-Encoding": "gzip, deflate, sdch",
-        #                 "Host": "www.chromium.org",
-        #                 "Accept-Language": "en-US,en;q=0.8",
-        #                 "Upgrade-Insecure-Requests": "1",
-        #                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
-        #                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        #                 "Cache-Control": "max-age=0",
-        #                 "Cookie": "_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9",
-        #                 "Connection": "keep-alive",
-        #                 "If-Modified-Since": "Mon, 24 Aug 2015 22:25:37 GMT"
-        #             },
-        #             "remoteIPAddress": "216.239.32.27",
-        #             "remotePort": 80,
-        #             "protocol": "http/{0}".format(entry.response['httpVersion'])
-        #         }
-        #     }
-        # }))
-        # ws.send(json.dumps({
-        #     "method": "Network.dataReceived",
-        #     "params": {
-        #         "requestId": entry.objectId,
-        #         "timestamp": 88986.985513,
-        #         "dataLength": entry.response['content']['size'],
-        #         "encodedDataLength": entry.response['bodySize']
-        #     }
-        # }))
-        # ws.send(json.dumps({
-        #     "method": "Network.loadingFinished",
-        #     "params": {
-        #         "requestId": entry.objectId,
-        #         "timestamp": 88986.985401,
-        #         "encodedDataLength": entry.response['bodySize']
-        #     }
-        # }))
+        ws.send(json.dumps({"msg": 'banditio.proxy connected'}))
+        ws.send(json.dumps({
+            "method": "Network.requestWillBeSent",
+            "params": {
+                "requestId": "7897.52",
+                "frameId": "7897.1",
+                "loaderId": "7897.3",
+                "documentURL": entry.request['url'],
+                "request": {
+                    "url": entry.request['url'],
+                    "method": entry.request['method'],
+                    "headers": {header['name']: header['value'] for header in entry.request['headers']}
+                },
+                "timestamp": 88986.634829,
+                "wallTime": 1440472453.19435,
+                "initiator": {"type": "other"},
+                "type": "Document"
+            }
+        }))
+        ws.send(json.dumps({
+            "method": "Network.responseReceived",
+            "params": {
+                "requestId": "7897.52",
+                "frameId": "7897.1",
+                "loaderId": "7897.3",
+                "timestamp": 88986.985021,
+                "type": "Document",
+                "response": {
+                    "url": entry.response['url'],
+                    "status": entry.response['status'],
+                    "statusText": entry.response['statusText'],
+                    "headers": {header['name']: header['value'] for header in entry.response['headers']},
+                    "mimeType": entry.response['content']['mimeType'],
+                    "connectionReused": False,
+                    "fromDiskCache": False,
+                    "fromServiceWorker": False,
+                    "timing": {
+                        "requestTime": 88986.636403,
+                        "proxyStart": -1,
+                        "proxyEnd": -1,
+                        "dnsStart": 0,
+                        "dnsEnd": 108.372000002419,
+                        "connectStart": 108.372000002419,
+                        "connectEnd": 113.420000008773,
+                        "sslStart": -1,
+                        "sslEnd": -1,
+                        "serviceWorkerFetchStart": -1,
+                        "serviceWorkerFetchReady": -1,
+                        "serviceWorkerFetchEnd": -1,
+                        "sendStart": 113.492999997106,
+                        "sendEnd": 113.573000009637,
+                        "receiveHeadersEnd": 347.90900000371
+                    },
+                    # "requestHeaders": {
+                    #     "If-None-Match": "\"1440455137124|#public|0|en|||0\"",
+                    #     "Accept-Encoding": "gzip, deflate, sdch",
+                    #     "Host": "www.chromium.org",
+                    #     "Accept-Language": "en-US,en;q=0.8",
+                    #     "Upgrade-Insecure-Requests": "1",
+                    #     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+                    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                    #     "Cache-Control": "max-age=0",
+                    #     "Cookie": "_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9",
+                    #     "Connection": "keep-alive",
+                    #     "If-Modified-Since": "Mon, 24 Aug 2015 22:25:37 GMT"
+                    # },
+                    "remoteIPAddress": "216.239.32.27",
+                    "remotePort": 80,
+                    "protocol": "http/{0}".format(entry.response['httpVersion'])
+                }
+            }
+        }))
+        ws.send(json.dumps({
+            "method": "Network.dataReceived",
+            "params": {
+                "requestId": "7897.52",
+                "timestamp": 88986.985513,
+                "dataLength": entry.response['content']['size'],
+                "encodedDataLength": entry.response['bodySize']
+            }
+        }))
+        ws.send(json.dumps({
+            "method": "Network.loadingFinished",
+            "params": {
+                "requestId": "7897.52",
+                "timestamp": 88986.985401,
+                "encodedDataLength": entry.response['bodySize']
+            }
+        }))
 
-        ws.send(json.dumps({"method":"Network.requestWillBeSent","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","documentURL":"http://www.chromium.org/","request":{"url":"http://www.chromium.org/","method":"GET","headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"}},"timestamp":88986.634829,"wallTime":1440472453.19435,"initiator":{"type":"other"},"type":"Document"}}))
-        ws.send(json.dumps({"method":"Network.responseReceived","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","timestamp":88986.985021,"type":"Document","response":{"url":"http://www.chromium.org/","status":304,"statusText":"Not Modified","headers":{"Date":"Tue, 25 Aug 2015 03:14:13 GMT","Last-Modified":"Mon, 24 Aug 2015 22:25:37 GMT","Server":"GSE","X-Robots-Tag":"noarchive","ETag":"\"1440455137124|#public|0|en|||0\""},"mimeType":"text/html","connectionReused":False,"connectionId":2554,"encodedDataLength":-1,"fromDiskCache":False,"fromServiceWorker":False,"timing":{"requestTime":88986.636403,"proxyStart":-1,"proxyEnd":-1,"dnsStart":0,"dnsEnd":108.372000002419,"connectStart":108.372000002419,"connectEnd":113.420000008773,"sslStart":-1,"sslEnd":-1,"serviceWorkerFetchStart":-1,"serviceWorkerFetchReady":-1,"serviceWorkerFetchEnd":-1,"sendStart":113.492999997106,"sendEnd":113.573000009637,"receiveHeadersEnd":347.90900000371},"headersText":"HTTP/1.1 304 Not Modified\r\nX-Robots-Tag: noarchive\r\nLast-Modified: Mon, 24 Aug 2015 22:25:37 GMT\r\nETag: \"1440455137124|#public|0|en|||0\"\r\nDate: Tue, 25 Aug 2015 03:14:13 GMT\r\nServer: GSE\r\n\r\n","requestHeaders":{"If-None-Match":"\"1440455137124|#public|0|en|||0\"","Accept-Encoding":"gzip, deflate, sdch","Host":"www.chromium.org","Accept-Language":"en-US,en;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Cache-Control":"max-age=0","Cookie":"_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9","Connection":"keep-alive","If-Modified-Since":"Mon, 24 Aug 2015 22:25:37 GMT"},"requestHeadersText":"GET / HTTP/1.1\r\nHost: www.chromium.org\r\nConnection: keep-alive\r\nCache-Control: max-age=0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36\r\nAccept-Encoding: gzip, deflate, sdch\r\nAccept-Language: en-US,en;q=0.8\r\nCookie: _ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9\r\nIf-None-Match: \"1440455137124|#public|0|en|||0\"\r\nIf-Modified-Since: Mon, 24 Aug 2015 22:25:37 GMT\r\n\r\n","remoteIPAddress":"216.239.32.27","remotePort":80,"protocol":"http/1.1"}}}))
-        ws.send(json.dumps({"method":"Network.dataReceived","params":{"requestId":"7897.52","timestamp":88986.985513,"dataLength":23423,"encodedDataLength":190}}))
-        #WebSocketHandler.ws_send('test', {"method":"Page.frameNavigated","params":{"frame":{"id":"7897.1","loaderId":"7897.3","url":"http://www.chromium.org/","mimeType":"text/html","securityOrigin":"http://www.chromium.org"}}})
-        ws.send(json.dumps({"method":"Network.loadingFinished","params":{"requestId":"7897.52","timestamp":88986.985401,"encodedDataLength":190}}))
-
+        #ws.send(json.dumps({"method":"Network.requestWillBeSent","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","documentURL":"http://www.chromium.org/","request":{"url":"http://www.chromium.org/","method":"GET","headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"}},"timestamp":88986.634829,"wallTime":1440472453.19435,"initiator":{"type":"other"},"type":"Document"}}))
+        #ws.send(json.dumps({"method":"Network.responseReceived","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","timestamp":88986.985021,"type":"Document","response":{"url":"http://www.chromium.org/","status":304,"statusText":"Not Modified","headers":{"Date":"Tue, 25 Aug 2015 03:14:13 GMT","Last-Modified":"Mon, 24 Aug 2015 22:25:37 GMT","Server":"GSE","X-Robots-Tag":"noarchive","ETag":"\"1440455137124|#public|0|en|||0\""},"mimeType":"text/html","connectionReused":False,"connectionId":2554,"encodedDataLength":-1,"fromDiskCache":False,"fromServiceWorker":False,"timing":{"requestTime":88986.636403,"proxyStart":-1,"proxyEnd":-1,"dnsStart":0,"dnsEnd":108.372000002419,"connectStart":108.372000002419,"connectEnd":113.420000008773,"sslStart":-1,"sslEnd":-1,"serviceWorkerFetchStart":-1,"serviceWorkerFetchReady":-1,"serviceWorkerFetchEnd":-1,"sendStart":113.492999997106,"sendEnd":113.573000009637,"receiveHeadersEnd":347.90900000371},"headersText":"HTTP/1.1 304 Not Modified\r\nX-Robots-Tag: noarchive\r\nLast-Modified: Mon, 24 Aug 2015 22:25:37 GMT\r\nETag: \"1440455137124|#public|0|en|||0\"\r\nDate: Tue, 25 Aug 2015 03:14:13 GMT\r\nServer: GSE\r\n\r\n","requestHeaders":{"If-None-Match":"\"1440455137124|#public|0|en|||0\"","Accept-Encoding":"gzip, deflate, sdch","Host":"www.chromium.org","Accept-Language":"en-US,en;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Cache-Control":"max-age=0","Cookie":"_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9","Connection":"keep-alive","If-Modified-Since":"Mon, 24 Aug 2015 22:25:37 GMT"},"requestHeadersText":"GET / HTTP/1.1\r\nHost: www.chromium.org\r\nConnection: keep-alive\r\nCache-Control: max-age=0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36\r\nAccept-Encoding: gzip, deflate, sdch\r\nAccept-Language: en-US,en;q=0.8\r\nCookie: _ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9\r\nIf-None-Match: \"1440455137124|#public|0|en|||0\"\r\nIf-Modified-Since: Mon, 24 Aug 2015 22:25:37 GMT\r\n\r\n","remoteIPAddress":"216.239.32.27","remotePort":80,"protocol":"http/1.1"}}}))
+        #ws.send(json.dumps({"method":"Network.dataReceived","params":{"requestId":"7897.52","timestamp":88986.985513,"dataLength":23423,"encodedDataLength":190}}))
+        ##WebSocketHandler.ws_send('test', {"method":"Page.frameNavigated","params":{"frame":{"id":"7897.1","loaderId":"7897.3","url":"http://www.chromium.org/","mimeType":"text/html","securityOrigin":"http://www.chromium.org"}}})
+        #ws.send(json.dumps({"method":"Network.loadingFinished","params":{"requestId":"7897.52","timestamp":88986.985401,"encodedDataLength":190}}))
 
         ws.close()
 
