@@ -1,6 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
-/container_settings.json
-/.idea
 /mitmdump.log
-/supervisord.log
 /supervisord.pid
+/supervisord.log
+/README.md

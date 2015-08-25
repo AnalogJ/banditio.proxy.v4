@@ -23,5 +23,5 @@ RUN ls /srv/banditio.proxy
 
 # Default command
 #CMD ["mitmdump", "--conf", "/srv/banditio.proxy/mitmdump.conf"]
-#CMD ["/usr/bin/supervisord"]
-CMD ["bash"]
+CMD ["/usr/bin/supervisord"]
+#CMD ["bash"]
