@@ -232,7 +232,6 @@ def response(context, flow):
         #ws = create_connection("ws://localhost:9000/ws/{0}".format(entry.pageref))
         ws = create_connection("ws://localhost:9000/ws/all",sslopt={"check_hostname": False})
         print "sending notifications"
-        ws.send(json.dumps({"msg": 'banditio.proxy connected'}))
         ws.send(json.dumps({
             "method": "Network.requestWillBeSent",
             "params": {
