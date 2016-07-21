@@ -3,7 +3,7 @@ import os
 import json
 import pytz
 from datetime import datetime
-from libmproxy.script import concurrent
+from mitmproxy.script import concurrent
 
 from models.entry import Entry
 from websocket import create_connection

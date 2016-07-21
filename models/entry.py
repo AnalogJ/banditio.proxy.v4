@@ -1,4 +1,4 @@
 __author__ = 'jason'
 
-class Entry(Object):
+class Entry(object):
     pass
