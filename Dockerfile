@@ -3,7 +3,7 @@ FROM mitmproxy/mitmproxy
 WORKDIR /srv/
 
 #install the python libraries required
-RUN pip install pytz tornado websocket-client
+RUN pip install --upgrade pip && pip install pytz tornado websocket-client
 
 #clone the application code.
 #RUN git clone https://github.com/AnalogJ/banditio.proxy.v4.git "banditio.proxy"
