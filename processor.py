@@ -4,11 +4,7 @@ import json
 import pytz
 from datetime import datetime
 from libmproxy.script import concurrent
-from parse_rest.connection import register,SessionToken
-from parse_rest.user import User
-from parse_rest.datatypes import ACL
 
-from models.page import Page
 from models.entry import Entry
 from websocket import create_connection
 
@@ -63,31 +59,31 @@ from websocket import create_connection
 #     def get_page_list(self):
 #         return self.__page_list__
 
-
+#
 def start(context, argv):
-    """
-        On start we create a HARLog instance. You will have to adapt this to
-        suit your actual needs of HAR generation. As it will probably be
-        necessary to cluster logs by IPs or reset them from time to time.
-    """
-    print "registering parse client"
-    register(os.environ.get('PARSE_CLIENT_KEY'), os.environ.get('PARSE_REST_CLIENT_SECRET'))
-
-    #users should be created by the webapp, but for now, we'll just create the user here.
-    #u = User.signup("dhelmet", "12345")
-    u = User.login(os.environ.get('PARSE_USERNAME'), os.environ.get('PARSE_PASSWORD'))
-    context.user = u
-
-    # context.dump_file = None
-    # if len(argv) > 1:
-    #     context.dump_file = argv[1]
-    # else:
-    #     raise ValueError(
-    #         'Usage: -s "har_extractor.py filename" '
-    #         '(- will output to stdout, filenames ending with .zhar '
-    #         'will result in compressed har)'
-    #     )
-    # context.HARLog = _HARLog(['https://github.com'])
+#     """
+#         On start we create a HARLog instance. You will have to adapt this to
+#         suit your actual needs of HAR generation. As it will probably be
+#         necessary to cluster logs by IPs or reset them from time to time.
+#     """
+#     print "registering parse client"
+#     register(os.environ.get('PARSE_CLIENT_KEY'), os.environ.get('PARSE_REST_CLIENT_SECRET'))
+#
+#     #users should be created by the webapp, but for now, we'll just create the user here.
+#     #u = User.signup("dhelmet", "12345")
+#     u = User.login(os.environ.get('PARSE_USERNAME'), os.environ.get('PARSE_PASSWORD'))
+#     context.user = u
+#
+#     # context.dump_file = None
+#     # if len(argv) > 1:
+#     #     context.dump_file = argv[1]
+#     # else:
+#     #     raise ValueError(
+#     #         'Usage: -s "har_extractor.py filename" '
+#     #         '(- will output to stdout, filenames ending with .zhar '
+#     #         'will result in compressed har)'
+#     #     )
+#     # context.HARLog = _HARLog(['https://github.com'])
     context.seen_server = set()
 
 
@@ -170,163 +166,138 @@ def response(context, flow):
     response_mime_type = flow.response.headers.get_first('Content-Type', '')
     response_redirect_url = flow.response.headers.get_first('Location', '')
 
-    token = context.user.sessionToken
-    with SessionToken(token):
-        entry = Entry()
-        #entry.ACL = ACL().set_user(context.user, read=True, write=True)
-        entry.startedDateTime = started_date_time
-        entry.time = full_time
-        entry.user = context.user
-        entry.request = {
-            "method": flow.request.method,
-            "url": flow.request.url,
-            "httpVersion": request_http_version,
-            "cookies": request_cookies,
-            "headers": request_headers,
-            "queryString": request_query_string,
-            "headersSize": request_headers_size,
-            "bodySize": request_body_size,
+    container_id = os.environ['HOSTNAME']
+
+    entry = Entry()
+    entry.startedDateTime = started_date_time
+    entry.time = full_time
+    entry.container_id = container_id
+    entry.request = {
+        "method": flow.request.method,
+        "url": flow.request.url,
+        "httpVersion": request_http_version,
+        "cookies": request_cookies,
+        "headers": request_headers,
+        "queryString": request_query_string,
+        "headersSize": request_headers_size,
+        "bodySize": request_body_size,
+    }
+    entry.response = {
+        "url": flow.request.url,
+        "status": flow.response.code,
+        "statusText": flow.response.msg,
+        "httpVersion": response_http_version,
+        "cookies": response_cookies,
+        "headers": response_headers,
+        "content": {
+            "size": response_body_size,
+            "compression": response_body_compression,
+            "mimeType": response_mime_type},
+        "redirectURL": response_redirect_url,
+        "headersSize": response_headers_size,
+        "bodySize": response_body_size,
+    }
+    entry.cache = {}
+    entry.timings = timings
+
+    #ws = create_connection("ws://localhost:9000/ws/{0}".format(entry.pageref))
+    ws = create_connection("ws://websocket.bandit.io:9000/ws/{0}".format(container_id), sslopt={"check_hostname": False})
+    ws.send(json.dumps({
+        "method": "Network.requestWillBeSent",
+        "params": {
+            "requestId": "7897.52",
+            "frameId": "7897.1",
+            "loaderId": "7897.3",
+            "documentURL": entry.request['url'],
+            "request": {
+                "url": entry.request['url'],
+                "method": entry.request['method'],
+                "headers": {header['name']: header['value'] for header in entry.request['headers']}
+            },
+            "timestamp": 88986.634829,
+            "wallTime": 1440472453.19435,
+            "initiator": {"type": "other"},
+            "type": "Document"
         }
-        entry.response = {
-            "url": flow.request.url,
-            "status": flow.response.code,
-            "statusText": flow.response.msg,
-            "httpVersion": response_http_version,
-            "cookies": response_cookies,
-            "headers": response_headers,
-            "content": {
-                "size": response_body_size,
-                "compression": response_body_compression,
-                "mimeType": response_mime_type},
-            "redirectURL": response_redirect_url,
-            "headersSize": response_headers_size,
-            "bodySize": response_body_size,
-        }
-        entry.cache = {}
-        entry.timings = timings
-
-        # If the current url is in the page list of context.HARLog or does not have
-        # a referrer we add it as a new pages object.
-
-        if flow.request.headers.get('Referer', None) is None:
-            page = Page()
-            page.user = context.user
-            #page.ACL = ACL().set_user(context.user, read=True, write=True)
-            page.startedDateTime = entry.startedDateTime
-            page.title = flow.request.url
-            page.save()
-
-            entry.pageref = page
-            #entry.addRelation('pageref', 'Page', [page.objectId])
-
-        # Lookup the referer in the page_ref of context.HARLog to point this entries
-        # pageref attribute to the right pages object, then set it as a new
-        # reference to build a reference tree.
-        existing_page = Page.Query.filter(title=flow.request.headers.get('Referer', None)).limit(1)
-        for page in existing_page:
-            entry.pageref = page.objectId
-            break
-
-        entry.save()
-
-        #ws = create_connection("ws://localhost:9000/ws/{0}".format(entry.pageref))
-        ws = create_connection("ws://localhost:9000/ws/all",sslopt={"check_hostname": False})
-        ws.send(json.dumps({
-            "method": "Network.requestWillBeSent",
-            "params": {
-                "requestId": "7897.52",
-                "frameId": "7897.1",
-                "loaderId": "7897.3",
-                "documentURL": entry.request['url'],
-                "request": {
-                    "url": entry.request['url'],
-                    "method": entry.request['method'],
-                    "headers": {header['name']: header['value'] for header in entry.request['headers']}
+    }))
+    ws.send(json.dumps({
+        "method": "Network.responseReceived",
+        "params": {
+            "requestId": "7897.52",
+            "frameId": "7897.1",
+            "loaderId": "7897.3",
+            "timestamp": 88986.985021,
+            "type": "Document",
+            "response": {
+                "url": entry.response['url'],
+                "status": entry.response['status'],
+                "statusText": entry.response['statusText'],
+                "headers": {header['name']: header['value'] for header in entry.response['headers']},
+                "mimeType": entry.response['content']['mimeType'],
+                "connectionReused": False,
+                "fromDiskCache": False,
+                "fromServiceWorker": False,
+                "timing": {
+                    "requestTime": 88986.636403,
+                    "proxyStart": -1,
+                    "proxyEnd": -1,
+                    "dnsStart": 0,
+                    "dnsEnd": 108.372000002419,
+                    "connectStart": 108.372000002419,
+                    "connectEnd": 113.420000008773,
+                    "sslStart": -1,
+                    "sslEnd": -1,
+                    "serviceWorkerFetchStart": -1,
+                    "serviceWorkerFetchReady": -1,
+                    "serviceWorkerFetchEnd": -1,
+                    "sendStart": 113.492999997106,
+                    "sendEnd": 113.573000009637,
+                    "receiveHeadersEnd": 347.90900000371
                 },
-                "timestamp": 88986.634829,
-                "wallTime": 1440472453.19435,
-                "initiator": {"type": "other"},
-                "type": "Document"
+                # "requestHeaders": {
+                #     "If-None-Match": "\"1440455137124|#public|0|en|||0\"",
+                #     "Accept-Encoding": "gzip, deflate, sdch",
+                #     "Host": "www.chromium.org",
+                #     "Accept-Language": "en-US,en;q=0.8",
+                #     "Upgrade-Insecure-Requests": "1",
+                #     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+                #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                #     "Cache-Control": "max-age=0",
+                #     "Cookie": "_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9",
+                #     "Connection": "keep-alive",
+                #     "If-Modified-Since": "Mon, 24 Aug 2015 22:25:37 GMT"
+                # },
+                "remoteIPAddress": "216.239.32.27",
+                "remotePort": 80,
+                "protocol": "http/{0}".format(entry.response['httpVersion'])
             }
-        }))
-        ws.send(json.dumps({
-            "method": "Network.responseReceived",
-            "params": {
-                "requestId": "7897.52",
-                "frameId": "7897.1",
-                "loaderId": "7897.3",
-                "timestamp": 88986.985021,
-                "type": "Document",
-                "response": {
-                    "url": entry.response['url'],
-                    "status": entry.response['status'],
-                    "statusText": entry.response['statusText'],
-                    "headers": {header['name']: header['value'] for header in entry.response['headers']},
-                    "mimeType": entry.response['content']['mimeType'],
-                    "connectionReused": False,
-                    "fromDiskCache": False,
-                    "fromServiceWorker": False,
-                    "timing": {
-                        "requestTime": 88986.636403,
-                        "proxyStart": -1,
-                        "proxyEnd": -1,
-                        "dnsStart": 0,
-                        "dnsEnd": 108.372000002419,
-                        "connectStart": 108.372000002419,
-                        "connectEnd": 113.420000008773,
-                        "sslStart": -1,
-                        "sslEnd": -1,
-                        "serviceWorkerFetchStart": -1,
-                        "serviceWorkerFetchReady": -1,
-                        "serviceWorkerFetchEnd": -1,
-                        "sendStart": 113.492999997106,
-                        "sendEnd": 113.573000009637,
-                        "receiveHeadersEnd": 347.90900000371
-                    },
-                    # "requestHeaders": {
-                    #     "If-None-Match": "\"1440455137124|#public|0|en|||0\"",
-                    #     "Accept-Encoding": "gzip, deflate, sdch",
-                    #     "Host": "www.chromium.org",
-                    #     "Accept-Language": "en-US,en;q=0.8",
-                    #     "Upgrade-Insecure-Requests": "1",
-                    #     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
-                    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                    #     "Cache-Control": "max-age=0",
-                    #     "Cookie": "_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9",
-                    #     "Connection": "keep-alive",
-                    #     "If-Modified-Since": "Mon, 24 Aug 2015 22:25:37 GMT"
-                    # },
-                    "remoteIPAddress": "216.239.32.27",
-                    "remotePort": 80,
-                    "protocol": "http/{0}".format(entry.response['httpVersion'])
-                }
-            }
-        }))
-        ws.send(json.dumps({
-            "method": "Network.dataReceived",
-            "params": {
-                "requestId": "7897.52",
-                "timestamp": 88986.985513,
-                "dataLength": entry.response['content']['size'],
-                "encodedDataLength": entry.response['bodySize']
-            }
-        }))
-        ws.send(json.dumps({
-            "method": "Network.loadingFinished",
-            "params": {
-                "requestId": "7897.52",
-                "timestamp": 88986.985401,
-                "encodedDataLength": entry.response['bodySize']
-            }
-        }))
+        }
+    }))
+    ws.send(json.dumps({
+        "method": "Network.dataReceived",
+        "params": {
+            "requestId": "7897.52",
+            "timestamp": 88986.985513,
+            "dataLength": entry.response['content']['size'],
+            "encodedDataLength": entry.response['bodySize']
+        }
+    }))
+    ws.send(json.dumps({
+        "method": "Network.loadingFinished",
+        "params": {
+            "requestId": "7897.52",
+            "timestamp": 88986.985401,
+            "encodedDataLength": entry.response['bodySize']
+        }
+    }))
 
-        #ws.send(json.dumps({"method":"Network.requestWillBeSent","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","documentURL":"http://www.chromium.org/","request":{"url":"http://www.chromium.org/","method":"GET","headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"}},"timestamp":88986.634829,"wallTime":1440472453.19435,"initiator":{"type":"other"},"type":"Document"}}))
-        #ws.send(json.dumps({"method":"Network.responseReceived","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","timestamp":88986.985021,"type":"Document","response":{"url":"http://www.chromium.org/","status":304,"statusText":"Not Modified","headers":{"Date":"Tue, 25 Aug 2015 03:14:13 GMT","Last-Modified":"Mon, 24 Aug 2015 22:25:37 GMT","Server":"GSE","X-Robots-Tag":"noarchive","ETag":"\"1440455137124|#public|0|en|||0\""},"mimeType":"text/html","connectionReused":False,"connectionId":2554,"encodedDataLength":-1,"fromDiskCache":False,"fromServiceWorker":False,"timing":{"requestTime":88986.636403,"proxyStart":-1,"proxyEnd":-1,"dnsStart":0,"dnsEnd":108.372000002419,"connectStart":108.372000002419,"connectEnd":113.420000008773,"sslStart":-1,"sslEnd":-1,"serviceWorkerFetchStart":-1,"serviceWorkerFetchReady":-1,"serviceWorkerFetchEnd":-1,"sendStart":113.492999997106,"sendEnd":113.573000009637,"receiveHeadersEnd":347.90900000371},"headersText":"HTTP/1.1 304 Not Modified\r\nX-Robots-Tag: noarchive\r\nLast-Modified: Mon, 24 Aug 2015 22:25:37 GMT\r\nETag: \"1440455137124|#public|0|en|||0\"\r\nDate: Tue, 25 Aug 2015 03:14:13 GMT\r\nServer: GSE\r\n\r\n","requestHeaders":{"If-None-Match":"\"1440455137124|#public|0|en|||0\"","Accept-Encoding":"gzip, deflate, sdch","Host":"www.chromium.org","Accept-Language":"en-US,en;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Cache-Control":"max-age=0","Cookie":"_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9","Connection":"keep-alive","If-Modified-Since":"Mon, 24 Aug 2015 22:25:37 GMT"},"requestHeadersText":"GET / HTTP/1.1\r\nHost: www.chromium.org\r\nConnection: keep-alive\r\nCache-Control: max-age=0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36\r\nAccept-Encoding: gzip, deflate, sdch\r\nAccept-Language: en-US,en;q=0.8\r\nCookie: _ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9\r\nIf-None-Match: \"1440455137124|#public|0|en|||0\"\r\nIf-Modified-Since: Mon, 24 Aug 2015 22:25:37 GMT\r\n\r\n","remoteIPAddress":"216.239.32.27","remotePort":80,"protocol":"http/1.1"}}}))
-        #ws.send(json.dumps({"method":"Network.dataReceived","params":{"requestId":"7897.52","timestamp":88986.985513,"dataLength":23423,"encodedDataLength":190}}))
-        ##WebSocketHandler.ws_send('test', {"method":"Page.frameNavigated","params":{"frame":{"id":"7897.1","loaderId":"7897.3","url":"http://www.chromium.org/","mimeType":"text/html","securityOrigin":"http://www.chromium.org"}}})
-        #ws.send(json.dumps({"method":"Network.loadingFinished","params":{"requestId":"7897.52","timestamp":88986.985401,"encodedDataLength":190}}))
+    #ws.send(json.dumps({"method":"Network.requestWillBeSent","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","documentURL":"http://www.chromium.org/","request":{"url":"http://www.chromium.org/","method":"GET","headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"}},"timestamp":88986.634829,"wallTime":1440472453.19435,"initiator":{"type":"other"},"type":"Document"}}))
+    #ws.send(json.dumps({"method":"Network.responseReceived","params":{"requestId":"7897.52","frameId":"7897.1","loaderId":"7897.3","timestamp":88986.985021,"type":"Document","response":{"url":"http://www.chromium.org/","status":304,"statusText":"Not Modified","headers":{"Date":"Tue, 25 Aug 2015 03:14:13 GMT","Last-Modified":"Mon, 24 Aug 2015 22:25:37 GMT","Server":"GSE","X-Robots-Tag":"noarchive","ETag":"\"1440455137124|#public|0|en|||0\""},"mimeType":"text/html","connectionReused":False,"connectionId":2554,"encodedDataLength":-1,"fromDiskCache":False,"fromServiceWorker":False,"timing":{"requestTime":88986.636403,"proxyStart":-1,"proxyEnd":-1,"dnsStart":0,"dnsEnd":108.372000002419,"connectStart":108.372000002419,"connectEnd":113.420000008773,"sslStart":-1,"sslEnd":-1,"serviceWorkerFetchStart":-1,"serviceWorkerFetchReady":-1,"serviceWorkerFetchEnd":-1,"sendStart":113.492999997106,"sendEnd":113.573000009637,"receiveHeadersEnd":347.90900000371},"headersText":"HTTP/1.1 304 Not Modified\r\nX-Robots-Tag: noarchive\r\nLast-Modified: Mon, 24 Aug 2015 22:25:37 GMT\r\nETag: \"1440455137124|#public|0|en|||0\"\r\nDate: Tue, 25 Aug 2015 03:14:13 GMT\r\nServer: GSE\r\n\r\n","requestHeaders":{"If-None-Match":"\"1440455137124|#public|0|en|||0\"","Accept-Encoding":"gzip, deflate, sdch","Host":"www.chromium.org","Accept-Language":"en-US,en;q=0.8","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8","Cache-Control":"max-age=0","Cookie":"_ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9","Connection":"keep-alive","If-Modified-Since":"Mon, 24 Aug 2015 22:25:37 GMT"},"requestHeadersText":"GET / HTTP/1.1\r\nHost: www.chromium.org\r\nConnection: keep-alive\r\nCache-Control: max-age=0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36\r\nAccept-Encoding: gzip, deflate, sdch\r\nAccept-Language: en-US,en;q=0.8\r\nCookie: _ga=GA1.2.1062414394.1440468745; _gat_SitesTracker=1; __utmt=1; __utma=221884874.1062414394.1440468745.1440468745.1440471278.2; __utmb=221884874.2.10.1440471278; __utmc=221884874; __utmz=221884874.1440468745.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aftzc=QW1lcmljYS9Mb3NfQW5nZWxlczp3eGRhd0FxcWxWZkNYdHRkVVJ2ZStlVEpOOVE9\r\nIf-None-Match: \"1440455137124|#public|0|en|||0\"\r\nIf-Modified-Since: Mon, 24 Aug 2015 22:25:37 GMT\r\n\r\n","remoteIPAddress":"216.239.32.27","remotePort":80,"protocol":"http/1.1"}}}))
+    #ws.send(json.dumps({"method":"Network.dataReceived","params":{"requestId":"7897.52","timestamp":88986.985513,"dataLength":23423,"encodedDataLength":190}}))
+    ##WebSocketHandler.ws_send('test', {"method":"Page.frameNavigated","params":{"frame":{"id":"7897.1","loaderId":"7897.3","url":"http://www.chromium.org/","mimeType":"text/html","securityOrigin":"http://www.chromium.org"}}})
+    #ws.send(json.dumps({"method":"Network.loadingFinished","params":{"requestId":"7897.52","timestamp":88986.985401,"encodedDataLength":190}}))
 
-        ws.close()
+    ws.close()
 
 
 # def done(context):
